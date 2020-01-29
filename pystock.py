@@ -29,7 +29,7 @@ plt.style.use('fivethirtyeight')
 ticker = sys.argv[1]
 
 # get the stock quote 2012-2019
-start = dt.datetime(2010, 1, 1)
+start = dt.datetime(2001, 1, 1)
 today = dt.date.today()
 df = web.DataReader(ticker, 'yahoo', start, today - dt.timedelta(days=1))
 print(df)
@@ -122,7 +122,7 @@ predictions = scaler.inverse_transform(predictions)
 rmse = np.sqrt(np.mean(((predictions - y_test)**2)))
 #rmse = np.sqrt(np.mean(np.power((np.array(y_test)-np.array(predictions)),2)))
 #rmse = np.sqrt(((predictions - y_test) ** 2).mean())
-print(rmse)
+print("rmse={}".format(rmse))
 
 # plot data
 train = data[:training_data_len]
@@ -162,4 +162,4 @@ pred_price = model.predict(x_test)
 # undo the scaling
 pred_price = scaler.inverse_transform(pred_price)
 # print the predicted price
-print(pred_price)
+print("predicted price is {}".format(pred_price))

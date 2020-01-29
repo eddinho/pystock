@@ -1,0 +1,9 @@
+{
+    "spellright.language": [],
+    "spellright.documentTypes": [
+        "markdown",
+        "latex",
+        "plaintext"
+    ],
+    "python.pythonPath": "/usr/bin/python3"
+}

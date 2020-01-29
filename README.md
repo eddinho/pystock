@@ -6,7 +6,6 @@ Predict the closing stock price using a neural net LSTM (long short term memory)
 ```bash
 git clone https://github.com/eddinho/pystock.git
 
-sudo cp ~/dev/pystock/pystock.py /usr/local/bin/
 sudo cp ~/dev/pystock/pystock /usr/local/bin/ 
 
 sudo chmod +x /usr/local/bin/pystock

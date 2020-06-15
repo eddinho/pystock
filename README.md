@@ -24,7 +24,7 @@ pystock IBM
 
 ![Validation plot](/img/validate.png)
 
-The prediced clsing price for the current day:
+The prediced closing price for the current day:
 
 ![Price prediction](/img/prediction.png)
 

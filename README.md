@@ -22,6 +22,28 @@ Interactive stock price prediction using LSTM neural networks and TensorFlow.
 - **Internet connection** (to fetch stock data from Yahoo Finance)
 - **4GB RAM** minimum (GPU optional, CPU works fine)
 
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue)
+![TensorFlow 2.10+](https://img.shields.io/badge/tensorflow-2.10%2B-orange)
+
+Interactive stock price prediction using LSTM neural networks and TensorFlow.
+
+**⚠️ DISCLAIMER:** This is an educational project and **NOT a financial tool or investment advice.** See [disclaimer](#disclaimer) below.
+
+## Features
+
+- **LSTM Neural Network**: Deep learning architecture for time-series forecasting
+- **Yahoo Finance Integration**: Automatic historical data retrieval
+- **Data Visualization**: Plots historical prices and prediction comparisons
+- **Reproducible Results**: Deterministic predictions with seed management
+
+## Prerequisites
+
+- **Python 3.8** or higher
+- **pip** (Python package manager)
+- **Internet connection** (to fetch stock data from Yahoo Finance)
+- **4GB RAM** minimum (GPU optional, CPU works fine)
+
 ## Installation
 
 ### From source

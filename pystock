@@ -1,9 +1,0 @@
-#!/bin/bash
-
-if [[ $# -eq 0 ]] ; then
-    echo '\!/ Please enter the stock tick !' 
-    echo 'Use something like: pystock AAPL'
-    exit 0
-fi
-
-python3 ~/dev/pystock/pystock.py $1

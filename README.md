@@ -1,3 +1,4 @@
+
 # PyStock
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
@@ -14,28 +15,7 @@ Interactive stock price prediction using LSTM neural networks and TensorFlow.
 - **Yahoo Finance Integration**: Automatic historical data retrieval
 - **Data Visualization**: Plots historical prices and prediction comparisons
 - **Reproducible Results**: Deterministic predictions with seed management
-
-## Prerequisites
-
-- **Python 3.8** or higher
-- **pip** (Python package manager)
-- **Internet connection** (to fetch stock data from Yahoo Finance)
-- **4GB RAM** minimum (GPU optional, CPU works fine)
-
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue)
-![TensorFlow 2.10+](https://img.shields.io/badge/tensorflow-2.10%2B-orange)
-
-Interactive stock price prediction using LSTM neural networks and TensorFlow.
-
-**⚠️ DISCLAIMER:** This is an educational project and **NOT a financial tool or investment advice.** See [disclaimer](#disclaimer) below.
-
-## Features
-
-- **LSTM Neural Network**: Deep learning architecture for time-series forecasting
-- **Yahoo Finance Integration**: Automatic historical data retrieval
-- **Data Visualization**: Plots historical prices and prediction comparisons
-- **Reproducible Results**: Deterministic predictions with seed management
+- **Multi-Day Forecasting**: Predict up to any number of days into the future
 
 ## Prerequisites
 
@@ -61,7 +41,17 @@ pip install -e .
 ### Generate predictions
 
 ```bash
+# Predict next trading day
 pystock AAPL
+
+# Predict next 30 trading days
+pystock AAPL --days 30
+
+# Predict any number of days ahead
+pystock AAPL --days 10
+
+# Test with demo data (no Yahoo Finance needed)
+pystock AAPL --demo --days 30
 ```
 
 ### Examples
@@ -70,6 +60,8 @@ pystock AAPL
 pystock MSFT
 pystock TSLA
 pystock ^GSPC  # S&P 500
+pystock AAPL --days 30  # 30-day forecast
+pystock AAPL --demo --days 30  # Demo mode with generated data
 ```
 
 ## Output
@@ -78,12 +70,58 @@ The tool will:
 
 1. Fetch historical stock data from Yahoo Finance (since 2019)
 2. Display raw data preview
-3. Plot historical closing price chart
+3. Generate and save historical closing price chart as `prediction/pystock_history.html`
 4. Train LSTM model (80% training, 20% testing)
 5. Display prediction accuracy (RMSE)
-6. Show actual vs predicted prices
-7. Predict next trading day's closing price
-8. Save model as `pystock.h5`
+6. Generate and save validation chart as `prediction/pystock_validation.html`
+7. Predict next trading day's closing price (or multiple days if `--days` is specified)
+8. For multi-day forecasts, generate and save forecast chart as `prediction/pystock_forecast.html`
+9. Save model as `pystock.h5`
+
+### Output Examples
+
+**Historical Price Data:**
+![Historical Price Chart](img/history.jpg)
+
+**Model Validation (Training vs Actual vs Predictions):**
+![Model Validation Chart](img/validation.jpg)
+
+**30-Day Price Forecast:**
+![30-Day Forecast Chart](img/30day_prediction.jpg)
+
+### Output Files
+
+**HTML Charts** (saved in `prediction/` folder):
+- All HTML files are interactive and can be opened in any web browser
+- The `prediction/` folder is automatically created and is **not tracked by git** (see `.gitignore`)
+- Charts can be zoomed, panned, and exported directly from the browser
+
+**Model** (saved in root directory):
+- `pystock.h5` - Trained neural network model (AI generated, not tracked by git)
+
+All charts are generated as interactive HTML files in the `prediction/` folder that you can open in your browser.
+
+### Multi-Day Forecasting
+
+When using `--days N`, the tool will:
+- Generate predictions for the next N trading days
+- Display each day's predicted price with price change and percentage change
+- Show total change over the forecast period
+- Generate an interactive forecast chart showing 60 days of historical data plus the N-day forecast
+- Save the forecast chart as `prediction/pystock_forecast.html`
+
+### Demo Mode
+
+Use the `--demo` flag to test the tool without requiring Yahoo Finance API access:
+
+```bash
+pystock AAPL --demo --days 30
+```
+
+Demo mode generates realistic synthetic stock data, allowing you to:
+- Test the entire prediction pipeline
+- See chart generation without API connectivity issues
+- Validate the forecasting visualization before running with real data
 
 ## Model Architecture
 
@@ -118,6 +156,10 @@ pystock/
 │   └── pystock/
 │       ├── __init__.py              # Package initialization
 │       └── main.py                  # Core prediction logic
+├── prediction/                      # Generated charts and analysis (auto-created)
+│   ├── pystock_history.html         # Historical price chart
+│   ├── pystock_validation.html      # Model validation chart
+│   └── pystock_forecast.html        # Price forecast chart (if using --days)
 ├── doc/
 │   ├── CONTRIBUTING.md              # Contribution guidelines
 │   ├── DEVELOPMENT.md               # Developer documentation
@@ -126,6 +168,7 @@ pystock/
 ├── pyproject.toml                   # Modern packaging configuration
 ├── README.md                        # This file
 ├── LICENSE                          # MIT License
+├── .gitignore                       # Git ignore rules
 └── requirements.txt                 # Project dependencies
 ```
 
@@ -134,10 +177,11 @@ pystock/
 - **tensorflow** (≥2.10.0): Deep learning framework
 - **keras** (≥2.10.0): Neural network API
 - **pandas** (≥1.3.0): Data manipulation
-- **pandas-datareader** (≥0.10.0): Yahoo Finance integration
+- **yfinance** (≥0.2.0): Yahoo Finance integration
 - **scikit-learn** (≥1.0.0): ML utilities
 - **numpy** (≥1.21.0): Numerical computing
-- **matplotlib** (≥3.5.0): Visualization
+- **matplotlib** (≥3.5.0): Data visualization
+- **plotly** (≥5.0.0): Interactive HTML charts
 
 Install all dependencies:
 
@@ -281,6 +325,7 @@ Contributions are welcome! Please see [CONTRIBUTING.md](doc/CONTRIBUTING.md) for
 
 ### Ideas for Enhancement
 
+- ~~Support multiple day forecasting~~ ✅ **Now available with `--days N`**
 - Support multiple stock symbols comparison
 - Add technical indicators (RSI, MACD, Bollinger Bands)
 - Web interface with Flask/Django

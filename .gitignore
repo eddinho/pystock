@@ -45,6 +45,7 @@ env/
 *.pickle
 *.csv
 data/
+prediction/
 
 # Tests and coverage
 .pytest_cache/

@@ -2,8 +2,11 @@
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue)
+![TensorFlow 2.10+](https://img.shields.io/badge/tensorflow-2.10%2B-orange)
 
 Interactive stock price prediction using LSTM neural networks and TensorFlow.
+
+**⚠️ DISCLAIMER:** This is an educational project and **NOT a financial tool or investment advice.** See [disclaimer](#disclaimer) below.
 
 ## Features
 
@@ -11,6 +14,13 @@ Interactive stock price prediction using LSTM neural networks and TensorFlow.
 - **Yahoo Finance Integration**: Automatic historical data retrieval
 - **Data Visualization**: Plots historical prices and prediction comparisons
 - **Reproducible Results**: Deterministic predictions with seed management
+
+## Prerequisites
+
+- **Python 3.8** or higher
+- **pip** (Python package manager)
+- **Internet connection** (to fetch stock data from Yahoo Finance)
+- **4GB RAM** minimum (GPU optional, CPU works fine)
 
 ## Installation
 
@@ -78,18 +88,23 @@ BATCH_SIZE = 1           # Training batch size
 EPOCHS = 1               # Training iterations
 ```
 
-## File Structure
+## Project Structure
 
 ```
 pystock/
 ├── src/
 │   └── pystock/
-│       ├── __init__.py       # Package initialization
-│       └── main.py           # Core prediction logic
-├── pyproject.toml            # Modern packaging config
-├── README.md                 # This file
-├── LICENSE                   # MIT License
-└── requirements.txt          # Dependencies
+│       ├── __init__.py              # Package initialization
+│       └── main.py                  # Core prediction logic
+├── doc/
+│   ├── CONTRIBUTING.md              # Contribution guidelines
+│   ├── DEVELOPMENT.md               # Developer documentation
+│   ├── CHANGELOG.md                 # Version history
+│   └── PUBLICATION_CHECKLIST.md     # Pre-publication requirements
+├── pyproject.toml                   # Modern packaging configuration
+├── README.md                        # This file
+├── LICENSE                          # MIT License
+└── requirements.txt                 # Project dependencies
 ```
 
 ## Dependencies
@@ -110,55 +125,104 @@ pip install -r requirements.txt
 
 ## Troubleshooting
 
-### Module not found
+### Module not found errors
 ```bash
 pip install -r requirements.txt
 ```
 
 ### Invalid ticker symbol
 - Verify the ticker is correct and traded on Yahoo Finance
-- Check internet connection
+- Check your internet connection
+- Try a well-known symbol like AAPL or MSFT to test
+
+### No data retrieved
+- Yahoo Finance may have data limitations or temporary issues
+- Try again in a few minutes
+- Test your internet connection
 
 ### GPU/CUDA issues
-For CPU-only TensorFlow:
+For CPU-only TensorFlow (faster installation):
 ```bash
 pip install tensorflow-cpu
 ```
 
 ### Model file location
-The model (`pystock.h5`) is generated in the current directory. It's ignored by git (.gitignore).
+- The trained model is saved as `pystock.h5` in the current directory
+- It's automatically ignored by git (see `.gitignore`)
+- Each run creates a new model, overwriting the previous one
 
-## Disclaimer
+### Out of memory errors
+- Reduce `BATCH_SIZE` from 1 to smaller values
+- Reduce `LOOKBACK_DAYS` from 60 to 30-45
+- Reduce LSTM units from 50 to 25-30
 
-**For educational purposes only.** Stock predictions are inherently uncertain and should not be the sole basis for investment decisions. Always consult official sources and financial advisors.
+## Disclaimer {#disclaimer}
 
-## License
+### Legal Notice
 
-MIT License - See [LICENSE](LICENSE) file
+**THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.**
 
-## Contributing
+### Educational Purpose Only
 
-Contributions welcome! Please see [CONTRIBUTING.md](doc/CONTRIBUTING.md) for guidelines.
+PyStock is an **educational project** designed to teach LSTM neural networks and time-series forecasting. It is **NOT**:
+- A financial tool
+- An investment advisor
+- Financial advice
+- A recommendation to buy or sell securities
 
-Ideas for enhancements:
+### Risk Warning
 
-- Support multiple stock symbols
-- Add technical indicators (RSI, MACD, Bollinger Bands)
-- Web interface
-- Hyperparameter optimization
-- Ensemble methods
-- Real-time predictions
+⚠️ **Stock price predictions are inherently uncertain and should NEVER be used as the sole basis for investment decisions.** Factors affecting stock prices include:
+- Market conditions and volatility
+- Economic indicators
+- Company announcements and earnings
+- Geopolitical events
+- Regulatory changes
+- Model limitations and errors
+
+Past performance does not guarantee future results.
+
+### Liability
+
+The authors and contributors are **not responsible** for any:
+- Financial losses or gains
+- Investment decisions based on this tool
+- Damages or consequences arising from using this software
+- Data accuracy or completeness from external sources
+
+**Always consult qualified financial professionals before making investment decisions.**
 
 ## Documentation
 
-- [Contributing Guide](doc/CONTRIBUTING.md) - How to contribute
-- [Development Guide](doc/DEVELOPMENT.md) - Architecture and development setup
-- [Changelog](doc/CHANGELOG.md) - Version history and roadmap
+- [Contributing Guide](doc/CONTRIBUTING.md) - How to contribute to the project
+- [Development Guide](doc/DEVELOPMENT.md) - Architecture, setup, and debugging
+- [Changelog](doc/CHANGELOG.md) - Version history and future roadmap
 - [Publication Checklist](doc/PUBLICATION_CHECKLIST.md) - Pre-publication requirements
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](doc/CONTRIBUTING.md) for guidelines.
+
+### Ideas for Enhancement
+
+- Support multiple stock symbols comparison
+- Add technical indicators (RSI, MACD, Bollinger Bands)
+- Web interface with Flask/Django
+- Hyperparameter optimization and tuning
+- Ensemble methods (combining multiple models)
+- Real-time predictions with websockets
+- Portfolio analysis features
+- More advanced architectures (GRU, Transformer)
+
+## License
+
+MIT License - See [LICENSE](LICENSE) file for details.
 
 ## Author
 
 Created as an educational project in deep learning and time-series forecasting.
 
+---
 
+**Questions?** Open an issue on GitHub or check the [Development Guide](doc/DEVELOPMENT.md).
 

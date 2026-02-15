@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pystock"
-version = "1.0.0"
+version = "0.1.0"
 description = "Predict stock closing prices using LSTM neural networks"
 readme = "README.md"
 license = {text = "MIT"}

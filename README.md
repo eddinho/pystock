@@ -52,6 +52,9 @@ pystock AAPL --days 10
 
 # Test with demo data (no Yahoo Finance needed)
 pystock AAPL --demo --days 30
+
+# Force a fresh model (ignore saved weights)
+pystock AAPL --fresh-model
 ```
 
 ### Examples
@@ -70,13 +73,14 @@ The tool will:
 
 1. Fetch historical stock data from Yahoo Finance (since 2019)
 2. Display raw data preview
-3. Generate and save historical closing price chart as `prediction/pystock_history.html`
+3. Generate and save historical closing price chart as `prediction/pystock_history_<TICKER>.html`
 4. Train LSTM model (80% training, 20% testing)
 5. Display prediction accuracy (RMSE)
-6. Generate and save validation chart as `prediction/pystock_validation.html`
+6. Generate and save validation chart as `prediction/pystock_validation_<TICKER>.html`
 7. Predict next trading day's closing price (or multiple days if `--days` is specified)
-8. For multi-day forecasts, generate and save forecast chart as `prediction/pystock_forecast.html`
-9. Save model as `pystock.h5`
+8. For multi-day forecasts, generate and save forecast chart as `prediction/pystock_forecast_<TICKER>.html`
+9. Save model as `pystock_<TICKER>.h5`
+10. On next run, load `pystock_<TICKER>.h5` and continue training (unless `--fresh-model` is used)
 
 ### Output Examples
 
@@ -97,7 +101,8 @@ The tool will:
 - Charts can be zoomed, panned, and exported directly from the browser
 
 **Model** (saved in root directory):
-- `pystock.h5` - Trained neural network model (AI generated, not tracked by git)
+- `pystock_<TICKER>.h5` - Trained neural network model (AI generated, not tracked by git)
+- Non-alphanumeric ticker characters are converted to underscores in filenames (e.g., `BRK-B` -> `BRK_B`)
 
 All charts are generated as interactive HTML files in the `prediction/` folder that you can open in your browser.
 
@@ -108,7 +113,7 @@ When using `--days N`, the tool will:
 - Display each day's predicted price with price change and percentage change
 - Show total change over the forecast period
 - Generate an interactive forecast chart showing 60 days of historical data plus the N-day forecast
-- Save the forecast chart as `prediction/pystock_forecast.html`
+- Save the forecast chart as `prediction/pystock_forecast_<TICKER>.html`
 
 ### Demo Mode
 
@@ -157,9 +162,9 @@ pystock/
 │       ├── __init__.py              # Package initialization
 │       └── main.py                  # Core prediction logic
 ├── prediction/                      # Generated charts and analysis (auto-created)
-│   ├── pystock_history.html         # Historical price chart
-│   ├── pystock_validation.html      # Model validation chart
-│   └── pystock_forecast.html        # Price forecast chart (if using --days)
+│   ├── pystock_history_<TICKER>.html      # Historical price chart
+│   ├── pystock_validation_<TICKER>.html   # Model validation chart
+│   └── pystock_forecast_<TICKER>.html     # Price forecast chart (if using --days)
 ├── doc/
 │   ├── CONTRIBUTING.md              # Contribution guidelines
 │   ├── DEVELOPMENT.md               # Developer documentation
@@ -267,9 +272,10 @@ pip install tensorflow-cpu
 ```
 
 ### Model file location
-- The trained model is saved as `pystock.h5` in the current directory
+- The trained model is saved as `pystock_<TICKER>.h5` in the current directory
 - It's automatically ignored by git (see `.gitignore`)
-- Each run creates a new model, overwriting the previous one
+- By default, the next run reuses this file and continues training
+- Use `--fresh-model` to start from scratch and overwrite the saved model
 
 ### Out of memory errors
 - Reduce `BATCH_SIZE` from 1 to smaller values

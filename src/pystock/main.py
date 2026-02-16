@@ -46,7 +46,7 @@ LOOKBACK_DAYS = 60
 TRAIN_TEST_SPLIT = 0.8
 BATCH_SIZE = 1
 EPOCHS = 1
-MODEL_PATH = 'pystock.h5'
+MODEL_PATH_TEMPLATE = 'pystock_{ticker_id}.h5'
 
 
 def generate_demo_data(ticker, start_date, end_date):
@@ -64,6 +64,13 @@ def generate_demo_data(ticker, start_date, end_date):
     
     df = pd.DataFrame({'Close': prices}, index=dates)
     return df
+
+
+def normalize_ticker_for_filename(ticker):
+    """Return a filesystem-safe ticker id for output filenames."""
+    ticker_id = ''.join(char if char.isalnum() else '_' for char in ticker.upper())
+    ticker_id = ticker_id.strip('_')
+    return ticker_id or "TICKER"
 
 
 def fetch_stock_data(ticker, start_date, end_date):
@@ -154,17 +161,21 @@ def fetch_stock_data(ticker, start_date, end_date):
 def main():
     """Main function to predict stock price."""
     if len(sys.argv) < 2:
-        print("Usage: pystock <TICKER> [--days DAYS] [--demo]")
+        print("Usage: pystock <TICKER> [--days DAYS] [--demo] [--fresh-model]")
         print("Example: pystock AAPL")
         print("Example: pystock AAPL --days 30")
         print("Example: pystock AAPL --demo --days 30  # Use demo data")
+        print("Example: pystock AAPL --fresh-model      # Ignore saved model")
         sys.exit(1)
 
     ticker = sys.argv[1].upper()
+    ticker_id = normalize_ticker_for_filename(ticker)
+    model_path = MODEL_PATH_TEMPLATE.format(ticker_id=ticker_id)
     
     # Parse optional arguments
     days_to_predict = 1
     use_demo = False
+    use_existing_model = True
     
     for i in range(2, len(sys.argv)):
         if sys.argv[i] == '--days' and i + 1 < len(sys.argv):
@@ -178,6 +189,8 @@ def main():
                 sys.exit(1)
         elif sys.argv[i] == '--demo':
             use_demo = True
+        elif sys.argv[i] == '--fresh-model':
+            use_existing_model = False
 
     try:
         # Create prediction folder
@@ -212,7 +225,7 @@ def main():
             template='plotly_white',
             height=600
         )
-        history_html = prediction_dir / 'pystock_history.html'
+        history_html = prediction_dir / f'pystock_history_{ticker_id}.html'
         fig.write_html(history_html)
         print(f"Chart saved to {history_html}")
 
@@ -239,15 +252,28 @@ def main():
         train_y = np.array(train_y)
         train_x = np.reshape(train_x, (train_x.shape[0], train_x.shape[1], 1))
 
-        # Build and train model
-        print("Building LSTM model...")
-        model = Sequential()
-        model.add(LSTM(50, return_sequences=True, input_shape=(train_x.shape[1], 1)))
-        model.add(LSTM(50, return_sequences=False))
-        model.add(Dense(25))
-        model.add(Dense(1))
+        # Build or load model, then continue training
+        model = None
+        if use_existing_model and Path(model_path).exists():
+            try:
+                print(f"Loading existing model from {model_path}...")
+                model = load_model(model_path)
+                model.compile(optimizer='adam', loss='mean_squared_error')
+                print("Continuing training from saved model...")
+            except Exception as load_error:
+                print(f"Warning: failed to load saved model ({load_error}). Building a new model.")
 
-        model.compile(optimizer='adam', loss='mean_squared_error')
+        if model is None:
+            if use_existing_model:
+                print("Building new LSTM model...")
+            else:
+                print("Building new LSTM model (--fresh-model enabled)...")
+            model = Sequential()
+            model.add(LSTM(50, return_sequences=True, input_shape=(train_x.shape[1], 1)))
+            model.add(LSTM(50, return_sequences=False))
+            model.add(Dense(25))
+            model.add(Dense(1))
+            model.compile(optimizer='adam', loss='mean_squared_error')
 
         print(f"Training model for {EPOCHS} epoch(s)...")
         model.fit(train_x, train_y, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1)
@@ -289,7 +315,7 @@ def main():
             template='plotly_white',
             height=600
         )
-        validation_html = prediction_dir / 'pystock_validation.html'
+        validation_html = prediction_dir / f'pystock_validation_{ticker_id}.html'
         fig.write_html(validation_html)
         print(f"Chart saved to {validation_html}")
 
@@ -400,13 +426,13 @@ def main():
                 height=600
             )
             
-            forecast_html = prediction_dir / 'pystock_forecast.html'
+            forecast_html = prediction_dir / f'pystock_forecast_{ticker_id}.html'
             fig.write_html(forecast_html)
             print(f"Forecast chart saved to {forecast_html}")
 
         # Save model
-        print(f"\nSaving model to {MODEL_PATH}...")
-        model.save(MODEL_PATH)
+        print(f"\nSaving model to {model_path}...")
+        model.save(model_path)
         print("Done!")
 
     except Exception as e:

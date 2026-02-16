@@ -40,12 +40,14 @@ env/
 
 # Models and data
 *.h5
+pystock_*.state.json
+models/
 *.pb
 *.pkl
 *.pickle
 *.csv
 data/
-prediction/
+predictions/
 
 # Tests and coverage
 .pytest_cache/

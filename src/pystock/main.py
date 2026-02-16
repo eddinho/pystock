@@ -46,7 +46,9 @@ LOOKBACK_DAYS = 60
 TRAIN_TEST_SPLIT = 0.8
 BATCH_SIZE = 1
 EPOCHS = 1
-MODEL_PATH_TEMPLATE = 'pystock_{ticker_id}.h5'
+MODEL_DIR = 'models'
+MODEL_PATH_TEMPLATE = 'models/pystock_{ticker_id}.h5'
+MODEL_STATE_TEMPLATE = 'models/pystock_{ticker_id}.state.json'
 
 
 def generate_demo_data(ticker, start_date, end_date):
@@ -71,6 +73,54 @@ def normalize_ticker_for_filename(ticker):
     ticker_id = ''.join(char if char.isalnum() else '_' for char in ticker.upper())
     ticker_id = ticker_id.strip('_')
     return ticker_id or "TICKER"
+
+
+def load_model_state(state_path):
+    """Load model state from disk if available."""
+    state_file = Path(state_path)
+    if not state_file.exists():
+        return {}
+
+    try:
+        with state_file.open('r', encoding='utf-8') as file:
+            state = json.load(file)
+    except Exception as exc:
+        print(f"Warning: failed to read model state {state_file} ({exc})")
+        return {}
+
+    if not isinstance(state, dict):
+        return {}
+
+    return state
+
+
+def save_model_state(state_path, ticker, last_trained_date):
+    """Persist model state to disk."""
+    state_file = Path(state_path)
+    state = {
+        "ticker": ticker,
+        "last_trained_date": last_trained_date,
+    }
+    with state_file.open('w', encoding='utf-8') as file:
+        json.dump(state, file, indent=2)
+
+
+def build_lstm_training_data(scaled_data, start_index):
+    """Build LSTM training windows starting from a target index."""
+    train_x = []
+    train_y = []
+
+    for i in range(start_index, len(scaled_data)):
+        train_x.append(scaled_data[i - LOOKBACK_DAYS:i, 0])
+        train_y.append(scaled_data[i, 0])
+
+    if not train_x:
+        return np.empty((0, LOOKBACK_DAYS, 1)), np.empty((0,))
+
+    train_x = np.array(train_x)
+    train_y = np.array(train_y)
+    train_x = np.reshape(train_x, (train_x.shape[0], train_x.shape[1], 1))
+    return train_x, train_y
 
 
 def fetch_stock_data(ticker, start_date, end_date):
@@ -171,6 +221,10 @@ def main():
     ticker = sys.argv[1].upper()
     ticker_id = normalize_ticker_for_filename(ticker)
     model_path = MODEL_PATH_TEMPLATE.format(ticker_id=ticker_id)
+    state_path = MODEL_STATE_TEMPLATE.format(ticker_id=ticker_id)
+    model_dir = Path(MODEL_DIR)
+    legacy_model_path = Path(f'pystock_{ticker_id}.h5')
+    legacy_state_path = Path(f'pystock_{ticker_id}.state.json')
     
     # Parse optional arguments
     days_to_predict = 1
@@ -193,8 +247,21 @@ def main():
             use_existing_model = False
 
     try:
-        # Create prediction folder
-        prediction_dir = Path('prediction')
+        # Create model folder
+        model_dir.mkdir(exist_ok=True)
+        model_path_obj = Path(model_path)
+        state_path_obj = Path(state_path)
+
+        # Migrate legacy files from project root to models/
+        if not model_path_obj.exists() and legacy_model_path.exists():
+            print(f"Migrating legacy model to {model_path_obj}...")
+            legacy_model_path.replace(model_path_obj)
+        if not state_path_obj.exists() and legacy_state_path.exists():
+            print(f"Migrating legacy model state to {state_path_obj}...")
+            legacy_state_path.replace(state_path_obj)
+
+        # Create predictions folder
+        prediction_dir = Path('predictions')
         prediction_dir.mkdir(exist_ok=True)
         
         # Fetch stock data
@@ -233,33 +300,25 @@ def main():
         print("\nPreparing training data...")
         data = df.filter(['Close'])
         dataset = data.values
+        if len(dataset) <= LOOKBACK_DAYS:
+            print(f"Error: Need at least {LOOKBACK_DAYS + 1} records, got {len(dataset)}")
+            sys.exit(1)
         training_data_len = math.ceil(len(dataset) * TRAIN_TEST_SPLIT)
 
         # Scale data to 0-1 range
         scaler = MinMaxScaler(feature_range=(0, 1))
         scaled_data = scaler.fit_transform(dataset)
 
-        # Create training dataset
-        training_data = scaled_data[0:training_data_len, :]
-        train_x = []
-        train_y = []
-
-        for i in range(LOOKBACK_DAYS, len(training_data)):
-            train_x.append(training_data[i - LOOKBACK_DAYS:i, 0])
-            train_y.append(training_data[i, 0])
-
-        train_x = np.array(train_x)
-        train_y = np.array(train_y)
-        train_x = np.reshape(train_x, (train_x.shape[0], train_x.shape[1], 1))
-
         # Build or load model, then continue training
         model = None
+        loaded_existing_model = False
         if use_existing_model and Path(model_path).exists():
             try:
                 print(f"Loading existing model from {model_path}...")
                 model = load_model(model_path)
                 model.compile(optimizer='adam', loss='mean_squared_error')
                 print("Continuing training from saved model...")
+                loaded_existing_model = True
             except Exception as load_error:
                 print(f"Warning: failed to load saved model ({load_error}). Building a new model.")
 
@@ -269,14 +328,54 @@ def main():
             else:
                 print("Building new LSTM model (--fresh-model enabled)...")
             model = Sequential()
-            model.add(LSTM(50, return_sequences=True, input_shape=(train_x.shape[1], 1)))
+            model.add(LSTM(50, return_sequences=True, input_shape=(LOOKBACK_DAYS, 1)))
             model.add(LSTM(50, return_sequences=False))
             model.add(Dense(25))
             model.add(Dense(1))
             model.compile(optimizer='adam', loss='mean_squared_error')
 
-        print(f"Training model for {EPOCHS} epoch(s)...")
-        model.fit(train_x, train_y, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1)
+        # Determine incremental training window from saved state
+        last_trained_date = None
+        if loaded_existing_model:
+            model_state = load_model_state(state_path)
+            last_trained_date = model_state.get('last_trained_date')
+            if last_trained_date:
+                print(f"Last trained date: {last_trained_date}")
+            else:
+                print("No previous model state found. Training on full history.")
+
+        train_start_index = LOOKBACK_DAYS
+        if last_trained_date:
+            try:
+                last_trained_timestamp = pd.Timestamp(last_trained_date)
+                unseen_indexes = np.where(data.index > last_trained_timestamp)[0]
+                if unseen_indexes.size == 0:
+                    train_start_index = None
+                else:
+                    train_start_index = max(LOOKBACK_DAYS, int(unseen_indexes[0]))
+            except Exception as state_error:
+                print(f"Warning: invalid state date '{last_trained_date}' ({state_error}). Training on full history.")
+                train_start_index = LOOKBACK_DAYS
+
+        if train_start_index is None:
+            print("No unseen dates detected. Skipping training.")
+        else:
+            train_x, train_y = build_lstm_training_data(scaled_data, train_start_index)
+            if train_x.shape[0] == 0:
+                print("No trainable windows for unseen dates. Skipping training.")
+            else:
+                first_target_date = pd.Timestamp(data.index[train_start_index]).date()
+                last_target_date = pd.Timestamp(data.index[-1]).date()
+                print(
+                    f"Training model for {EPOCHS} epoch(s) on {train_x.shape[0]} window(s) "
+                    f"from {first_target_date} to {last_target_date}..."
+                )
+                model.fit(train_x, train_y, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1)
+                try:
+                    save_model_state(state_path, ticker, last_target_date.isoformat())
+                    print(f"Updated model state: {state_path}")
+                except Exception as state_error:
+                    print(f"Warning: failed to save model state ({state_error})")
 
         # Create testing dataset
         test_data = scaled_data[training_data_len - LOOKBACK_DAYS:, :]

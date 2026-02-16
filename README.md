@@ -16,6 +16,7 @@ Interactive stock price prediction using LSTM neural networks and TensorFlow.
 - **Data Visualization**: Plots historical prices and prediction comparisons
 - **Reproducible Results**: Deterministic predictions with seed management
 - **Multi-Day Forecasting**: Predict up to any number of days into the future
+- **Incremental Training**: Reuses saved models and trains only on unseen dates
 
 ## Prerequisites
 
@@ -73,14 +74,14 @@ The tool will:
 
 1. Fetch historical stock data from Yahoo Finance (since 2019)
 2. Display raw data preview
-3. Generate and save historical closing price chart as `prediction/pystock_history_<TICKER>.html`
+3. Generate and save historical closing price chart as `predictions/pystock_history_<TICKER>.html`
 4. Train LSTM model (80% training, 20% testing)
 5. Display prediction accuracy (RMSE)
-6. Generate and save validation chart as `prediction/pystock_validation_<TICKER>.html`
+6. Generate and save validation chart as `predictions/pystock_validation_<TICKER>.html`
 7. Predict next trading day's closing price (or multiple days if `--days` is specified)
-8. For multi-day forecasts, generate and save forecast chart as `prediction/pystock_forecast_<TICKER>.html`
-9. Save model as `pystock_<TICKER>.h5`
-10. On next run, load `pystock_<TICKER>.h5` and continue training (unless `--fresh-model` is used)
+8. For multi-day forecasts, generate and save forecast chart as `predictions/pystock_forecast_<TICKER>.html`
+9. Save model as `models/pystock_<TICKER>.h5`
+10. On next run, load `models/pystock_<TICKER>.h5` and train only on unseen dates (unless `--fresh-model` is used)
 
 ### Output Examples
 
@@ -95,16 +96,17 @@ The tool will:
 
 ### Output Files
 
-**HTML Charts** (saved in `prediction/` folder):
+**HTML Charts** (saved in `predictions/` folder):
 - All HTML files are interactive and can be opened in any web browser
-- The `prediction/` folder is automatically created and is **not tracked by git** (see `.gitignore`)
+- The `predictions/` folder is automatically created and is **not tracked by git** (see `.gitignore`)
 - Charts can be zoomed, panned, and exported directly from the browser
 
-**Model** (saved in root directory):
-- `pystock_<TICKER>.h5` - Trained neural network model (AI generated, not tracked by git)
+**Model** (saved in `models/` folder):
+- `models/pystock_<TICKER>.h5` - Trained neural network model (AI generated, not tracked by git)
+- `models/pystock_<TICKER>.state.json` - Stores last trained date for incremental training
 - Non-alphanumeric ticker characters are converted to underscores in filenames (e.g., `BRK-B` -> `BRK_B`)
 
-All charts are generated as interactive HTML files in the `prediction/` folder that you can open in your browser.
+All charts are generated as interactive HTML files in the `predictions/` folder that you can open in your browser.
 
 ### Multi-Day Forecasting
 
@@ -113,7 +115,7 @@ When using `--days N`, the tool will:
 - Display each day's predicted price with price change and percentage change
 - Show total change over the forecast period
 - Generate an interactive forecast chart showing 60 days of historical data plus the N-day forecast
-- Save the forecast chart as `prediction/pystock_forecast_<TICKER>.html`
+- Save the forecast chart as `predictions/pystock_forecast_<TICKER>.html`
 
 ### Demo Mode
 
@@ -161,7 +163,7 @@ pystock/
 │   └── pystock/
 │       ├── __init__.py              # Package initialization
 │       └── main.py                  # Core prediction logic
-├── prediction/                      # Generated charts and analysis (auto-created)
+├── predictions/                     # Generated charts and analysis (auto-created)
 │   ├── pystock_history_<TICKER>.html      # Historical price chart
 │   ├── pystock_validation_<TICKER>.html   # Model validation chart
 │   └── pystock_forecast_<TICKER>.html     # Price forecast chart (if using --days)
@@ -272,9 +274,11 @@ pip install tensorflow-cpu
 ```
 
 ### Model file location
-- The trained model is saved as `pystock_<TICKER>.h5` in the current directory
+- The trained model is saved as `models/pystock_<TICKER>.h5`
+- The incremental training state is saved as `models/pystock_<TICKER>.state.json`
 - It's automatically ignored by git (see `.gitignore`)
-- By default, the next run reuses this file and continues training
+- By default, the next run reuses the model and only trains on unseen dates
+- If there are no unseen dates, training is skipped
 - Use `--fresh-model` to start from scratch and overwrite the saved model
 
 ### Out of memory errors
